@@ -30,9 +30,9 @@ render <- function(input,
   perf_timer_start("render")
 
   init_render_context()
-  on.exit(clear_render_context(), add = TRUE)
-
-  on.exit(clean_tmpfiles(), add = TRUE)
+  on.exit({
+    clear_render_context(); clean_tmpfiles(); attach_metadata(NULL)
+  }, add = TRUE)
 
   # check for "all" output formats
   if (identical(output_format, "all")) {
@@ -699,7 +699,10 @@ render <- function(input,
 
   if (run_pandoc) {
     # return the full path to the output file
-    invisible(tools::file_path_as_absolute(output_file))
+    output_file <- tools::file_path_as_absolute(output_file)
+    # attach the metadata if specified via attach_metadata()
+    attr(output_file, 'rmarkdown_metadata') <- .globals$output_meta
+    invisible(output_file)
   } else {
     # did not run pandoc; returns the markdown output with attributes of the
     # knitr meta data and intermediate files
@@ -839,6 +842,10 @@ resolve_df_print <- function(df_print) {
   df_print
 }
 
+#' @export
+attach_metadata <- function(data = NULL) {
+  .globals$output_meta <- data
+}
 
 # package level globals
 .globals <- new.env(parent = emptyenv())
